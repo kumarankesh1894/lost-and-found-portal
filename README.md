@@ -104,6 +104,8 @@ node scripts/create-moderator.js username email password
 
 # Setup default moderator
 node scripts/setup-moderator.js
+
+
 ```
 
 ## 📊 API Endpoints
