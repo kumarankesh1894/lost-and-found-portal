@@ -25,7 +25,6 @@ const Home = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // ✅ useCallback to fix dependency warning
   const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
@@ -75,29 +74,12 @@ const Home = () => {
     return type === "lost" ? "badge-lost" : "badge-found";
   };
 
-  const getCategoryIcon = (category) => {
-    const icons = {
-      electronics: "📱",
-      clothing: "👕",
-      jewelry: "💍",
-      books: "📚",
-      documents: "📄",
-      other: "🔍",
-    };
-    return icons[category] || "🔍";
-  };
-
-  // Add this helper function at the top of the component
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString);
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        return "Invalid date";
-      }
+      if (isNaN(date.getTime())) return "Invalid date";
       return format(date, "MMM dd, yyyy");
-    } catch (error) {
-      console.error("Error formatting date:", error);
+    } catch {
       return "Invalid date";
     }
   };
@@ -141,7 +123,7 @@ const Home = () => {
       {/* Search and Filters */}
       <div className="card mb-12 glass">
         <h2 className="text-2xl font-bold text-text-primary mb-6 text-center">
-          🔍 Search & Filter
+          Search & Filter
         </h2>
         <form
           onSubmit={handleSearch}
@@ -193,7 +175,6 @@ const Home = () => {
       {/* Items Grid */}
       {items.length === 0 ? (
         <div className="text-center py-20">
-          <div className="text-8xl mb-6 animate-bounce">🔍</div>
           <h3 className="text-2xl font-semibold text-text-secondary mb-4">
             No items found
           </h3>
@@ -219,9 +200,6 @@ const Home = () => {
                 </div>
 
                 <div className="text-center mb-4">
-                  <div className="text-5xl mb-3 group-hover:scale-110 transition-transform duration-300">
-                    {getCategoryIcon(item.category)}
-                  </div>
                   <h3 className="font-bold text-xl mb-3 text-text-primary group-hover:text-text-accent transition-colors">
                     {item.title}
                   </h3>
@@ -255,7 +233,6 @@ const Home = () => {
                     View Details
                   </Link>
 
-                  {/* Quick Claim Button for Found Items */}
                   {item.type === "found" &&
                     item.status === "approved" &&
                     !item.claimant && (
