@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Verify JWT token
+ 
 const auth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -24,7 +24,7 @@ const auth = async (req, res, next) => {
   }
 };
 
-// Check if user is moderator or admin
+ 
 const isModerator = (req, res, next) => {
   if (req.user.role === 'moderator' || req.user.role === 'admin') {
     next();
@@ -33,7 +33,7 @@ const isModerator = (req, res, next) => {
   }
 };
 
-// Check if user is admin
+
 const isAdmin = (req, res, next) => {
   if (req.user.role === 'admin') {
     next();
