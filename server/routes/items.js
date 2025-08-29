@@ -38,7 +38,7 @@ router.post('/', auth, [
     };
     
      
-    console.log(`🔔 NOTIFICATION: ${notificationData.message}`);
+    console.log(`NOTIFICATION: ${notificationData.message}`);
 
     res.status(201).json({
       message: 'Item submitted successfully and pending approval',
