@@ -4,10 +4,7 @@ const Item = require('../models/Item');
 const { auth, isModerator } = require('../middleware/auth');
 
 const router = express.Router();
-
-// @route   GET /api/moderators/pending
-// @desc    Get all pending items for moderation
-// @access  Private (Moderator only)
+ 
 router.get('/pending', auth, isModerator, async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
@@ -31,10 +28,7 @@ router.get('/pending', auth, isModerator, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
-// @route   GET /api/moderators/stats
-// @desc    Get moderation statistics
-// @access  Private (Moderator only)
+ 
 router.get('/stats', auth, isModerator, async (req, res) => {
   try {
     const stats = await Item.aggregate([
@@ -65,9 +59,7 @@ router.get('/stats', auth, isModerator, async (req, res) => {
   }
 });
 
-// @route   POST /api/moderators/:id/approve
-// @desc    Approve a pending item
-// @access  Private (Moderator only)
+ 
 router.post('/:id/approve', auth, isModerator, async (req, res) => {
   try {
     const item = await Item.findById(req.params.id);
@@ -80,19 +72,19 @@ router.post('/:id/approve', auth, isModerator, async (req, res) => {
       return res.status(400).json({ message: 'Can only approve pending items' });
     }
 
-    // Update item status
+    
     item.status = 'approved';
     item.moderator = req.user._id;
     item.moderatedAt = new Date();
     await item.save();
 
-    // Send notification to reporter
+    
     const notificationData = {
       message: `Your ${item.type} item "${item.title}" has been approved!`,
       type: 'item_approved'
     };
     
-    console.log(`🔔 NOTIFICATION: ${notificationData.message}`);
+    console.log(` NOTIFICATION: ${notificationData.message}`);
 
     res.json({
       message: 'Item approved successfully',
@@ -104,9 +96,7 @@ router.post('/:id/approve', auth, isModerator, async (req, res) => {
   }
 });
 
-// @route   POST /api/moderators/:id/reject
-// @desc    Reject a pending item
-// @access  Private (Moderator only)
+ 
 router.post('/:id/reject', auth, isModerator, [
   body('rejectionReason').notEmpty().withMessage('Rejection reason is required')
 ], async (req, res) => {
@@ -127,20 +117,20 @@ router.post('/:id/reject', auth, isModerator, [
       return res.status(400).json({ message: 'Can only reject pending items' });
     }
 
-    // Update item status
+    
     item.status = 'rejected';
     item.moderator = req.user._id;
     item.moderatedAt = new Date();
     item.rejectionReason = rejectionReason;
     await item.save();
 
-    // Send notification to reporter
+     
     const notificationData = {
       message: `Your ${item.type} item "${item.title}" was rejected. Reason: ${rejectionReason}`,
       type: 'item_rejected'
     };
     
-    console.log(`🔔 NOTIFICATION: ${notificationData.message}`);
+    console.log(` NOTIFICATION: ${notificationData.message}`);
 
     res.json({
       message: 'Item rejected successfully',
@@ -152,9 +142,7 @@ router.post('/:id/reject', auth, isModerator, [
   }
 });
 
-// @route   GET /api/moderators/recent-activity
-// @desc    Get recent moderation activity
-// @access  Private (Moderator only)
+ 
 router.get('/recent-activity', auth, isModerator, async (req, res) => {
   try {
     const { limit = 20 } = req.query;
@@ -175,9 +163,7 @@ router.get('/recent-activity', auth, isModerator, async (req, res) => {
   }
 });
 
-// @route   GET /api/moderators/search
-// @desc    Search items for moderation
-// @access  Private (Moderator only)
+ 
 router.get('/search', auth, isModerator, async (req, res) => {
   try {
     const { q, status, type, category, page = 1, limit = 10 } = req.query;

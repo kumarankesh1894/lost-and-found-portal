@@ -7,14 +7,12 @@ const bcrypt = require('bcryptjs');
 
 const router = express.Router();
 
-// Generate JWT token
+ 
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '7d' });
 };
 
-// @route   POST /api/auth/register
-// @desc    Register a new user
-// @access  Public
+ 
 router.post('/register', [
   body('username').isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
   body('email').isEmail().withMessage('Please provide a valid email'),
@@ -29,13 +27,13 @@ router.post('/register', [
 
     const { username, email, password, phone } = req.body;
 
-    // Check if user already exists
+    
     let user = await User.findOne({ $or: [{ email }, { username }] });
     if (user) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create new user
+    
     const hashedPassword = await bcrypt.hash(password, 10);
     user = new User({
       username,
@@ -46,7 +44,7 @@ router.post('/register', [
 
     await user.save();
 
-    // Generate token
+ 
     const token = generateToken(user._id);
 
     res.status(201).json({
@@ -64,10 +62,7 @@ router.post('/register', [
     res.status(500).json({ message: 'Server error' });
   }
 });
-
-// @route   POST /api/auth/login
-// @desc    Login user
-// @access  Public
+ 
 router.post('/login', [
   body('email').isEmail().withMessage('Please provide a valid email'),
   body('password').exists().withMessage('Password is required')
@@ -80,7 +75,7 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
-    // Check if user exists
+   
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
@@ -116,9 +111,7 @@ router.post('/login', [
   }
 });
 
-// @route   GET /api/auth/profile
-// @desc    Get user profile
-// @access  Private
+ 
 router.get('/profile', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
@@ -128,10 +121,7 @@ router.get('/profile', auth, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
-// @route   PUT /api/auth/profile
-// @desc    Update user profile
-// @access  Private
+ 
 router.put('/profile', auth, [
   body('username').optional().isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
   body('phone').optional().isMobilePhone().withMessage('Please provide a valid phone number')
