@@ -1,50 +1,40 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', 'config.env') });
 const mongoose = require('mongoose');
 const User = require('../models/User');
 
-// Load environment variables
-require('dotenv').config({ path: './config.env' });
-
-const listModerators = async () => {
+async function listModerators() {
   try {
-    // Connect to MongoDB Atlas
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-
-    console.log('✅ Connected to MongoDB Atlas');
-    console.log('🔍 Searching for moderator accounts...\n');
-
-    // Find all moderators
-    const moderators = await User.find({ role: 'moderator' }).select('-password');
-
-    if (moderators.length === 0) {
-      console.log('❌ No moderator accounts found in the database');
-      console.log('💡 Use one of these scripts to create a moderator:');
-      console.log('   - node scripts/setup-moderator.js (creates default moderator)');
-      console.log('   - node scripts/create-moderator.js <username> <email> <password>');
-    } else {
-      console.log(`✅ Found ${moderators.length} moderator account(s):\n`);
-      
-      moderators.forEach((mod, index) => {
-        console.log(`👤 Moderator ${index + 1}:`);
-        console.log(`   Username: ${mod.username}`);
-        console.log(`   Email: ${mod.email}`);
-        console.log(`   Phone: ${mod.phone}`);
-        console.log(`   Status: ${mod.isActive ? '🟢 Active' : '🔴 Inactive'}`);
-        console.log(`   Created: ${mod.createdAt.toLocaleDateString()}`);
-        console.log('');
-      });
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error('MONGODB_URI is not defined in environment variables');
     }
 
-  } catch (error) {
-    console.error('❌ Error listing moderators:', error);
-  } finally {
-    await mongoose.disconnect();
-    console.log('🔌 Disconnected from MongoDB Atlas');
-    process.exit(0);
-  }
-};
+    console.log('Connecting to MongoDB...');
+    await mongoose.connect(uri);
+    console.log('Connected to MongoDB successfully');
+    
+    const moderators = await User.find({ role: 'moderator' })
+      .select('-password')
+      .lean();
 
-// Run the script
+    console.log('\nCurrent Moderators:');
+    console.table(moderators.map(m => ({
+      Username: m.username,
+      Email: m.email,
+      Active: m.isActive,
+      Created: m.createdAt
+    })));
+
+    await mongoose.disconnect();
+    process.exit(0);
+  } catch (error) {
+    console.error('Error listing moderators:', error);
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.disconnect();
+    }
+    process.exit(1);
+  }
+}
+
 listModerators();

@@ -1,61 +1,42 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', 'config.env') });
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
-// Load environment variables
-require('dotenv').config({ path: './config.env' });
-
-const createModerator = async () => {
+async function setupModerator() {
   try {
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/lost-found-portal', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-
-    console.log('✅ Connected to MongoDB');
-
-    // Check if moderator already exists
-    const existingModerator = await User.findOne({ email: 'moderator@example.com' });
-    
-    if (existingModerator) {
-      console.log('⚠️  Moderator user already exists');
-      console.log(`Username: ${existingModerator.username}`);
-      console.log(`Email: ${existingModerator.email}`);
-      console.log(`Role: ${existingModerator.role}`);
-      process.exit(0);
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error('MONGODB_URI is not defined in environment variables');
     }
 
-    // Create moderator user
-    const hashedPassword = await bcrypt.hash('moderator123', 10);
+    console.log('Connecting to MongoDB...');
+    await mongoose.connect(uri);
+    console.log('Connected to MongoDB successfully');
     
-    const moderator = new User({
-      username: 'moderator',
+    // Create initial moderator account
+    const moderatorData = {
+      username: 'admin_moderator',
       email: 'moderator@example.com',
-      password: hashedPassword,
+      password: await bcrypt.hash('moderator123', 10),
       role: 'moderator',
-      phone: '+1234567890',
       isActive: true
-    });
+    };
 
-    await moderator.save();
+    const moderator = await User.findOneAndUpdate(
+      { email: moderatorData.email },
+      moderatorData,
+      { upsert: true, new: true }
+    );
 
-    console.log('✅ Moderator user created successfully!');
-    console.log('📋 Login Credentials:');
-    console.log('   Email: moderator@example.com');
-    console.log('   Password: moderator123');
-    console.log('   Role: moderator');
-    console.log('');
-    console.log('🔐 You can now login with these credentials to access the moderator dashboard');
-
-  } catch (error) {
-    console.error('❌ Error creating moderator:', error);
-  } finally {
+    console.log('Initial moderator setup complete:', moderator.username);
     await mongoose.disconnect();
-    console.log('🔌 Disconnected from MongoDB');
     process.exit(0);
+  } catch (error) {
+    console.error('Error setting up moderator:', error);
+    process.exit(1);
   }
-};
+}
 
-// Run the script
-createModerator();
+setupModerator();

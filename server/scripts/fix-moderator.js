@@ -1,54 +1,47 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', 'config.env') });
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
-// Load environment variables
-require('dotenv').config({ path: '../config.env' });
-
-const fixModerator = async () => {
+async function fixModerator(email) {
   try {
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/lost-found-portal', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error('MONGODB_URI is not defined in environment variables');
+    }
 
-    console.log('✅ Connected to MongoDB');
-
-    // Remove existing moderator
-    await User.deleteOne({ email: 'moderator@example.com' });
-    console.log('🗑️  Removed old moderator account');
-
-    // Create new moderator user with properly hashed password
-    const hashedPassword = await bcrypt.hash('moderator123', 10);
+    console.log('Connecting to MongoDB...');
+    await mongoose.connect(uri);
+    console.log('Connected to MongoDB successfully');
     
-    const moderator = new User({
-      username: 'moderator',
-      email: 'moderator@example.com',
-      password: hashedPassword,
-      role: 'moderator',
-      phone: '+1234567890',
-      isActive: true
-    });
+    const moderator = await User.findOne({ email });
+    if (!moderator) {
+      console.error('Moderator not found');
+      await mongoose.disconnect();
+      process.exit(1);
+    }
 
+    moderator.role = 'moderator';
+    moderator.isActive = true;
     await moderator.save();
 
-    console.log('✅ Moderator user recreated successfully!');
-    console.log('📋 Login Credentials:');
-    console.log('   Email: moderator@example.com');
-    console.log('   Password: moderator123');
-    console.log('   Role: moderator');
-    console.log('');
-    console.log('🔐 You can now login with these credentials to access the moderator dashboard');
-
-  } catch (error) {
-    console.error('❌ Error fixing moderator:', error);
-  } finally {
+    console.log('Moderator fixed:', moderator.username);
     await mongoose.disconnect();
-    console.log('🔌 Disconnected from MongoDB');
     process.exit(0);
+  } catch (error) {
+    console.error('Error fixing moderator:', error);
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.disconnect();
+    }
+    process.exit(1);
   }
-};
+}
 
-// Run the script
-fixModerator();
+// Get command line arguments
+const [,, email] = process.argv;
+if (!email) {
+  console.error('Usage: node fix-moderator.js <email>');
+  process.exit(1);
+}
+
+fixModerator(email);
